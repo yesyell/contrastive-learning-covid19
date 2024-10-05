@@ -12,6 +12,8 @@ import torchvision.models as models
 from PIL import Image
 import os
 from audio import change_volume
+import gdown
+import tempfile
 
 # OpenMP 오류 해결을 위한 환경 변수 설정
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
@@ -122,10 +124,17 @@ def load_model():
     moco = MoCoV2(base_encoder=models.resnet50, K=4096)
     classifier = LinearClassifier(128, num_classes=2)  # Assuming binary classification
     
-    moco_path = get_absolute_path('forapp/ckpoint/moco_covid_metadata_best_loss.pth')
-    classifier_path = get_absolute_path('forapp/ckpoint/classifier_best_covid.pth')
     
-    moco.load_state_dict(torch.load(moco_path, map_location=torch.device('cpu'), weights_only=True)['model_state_dict'])
+    # 구글 드라이브 파일 ID
+    moco_file_id = '1IETYO9NVO0S4wNLulaLwh8XgtcPYhbUt'
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        moco_path = os.path.join(tmp_dir, 'moco_covid_metadata_best_loss.pth')
+        # 구글 드라이브에서 파일 다운로드
+        gdown.download(f"https://drive.google.com/uc?id={moco_file_id}", moco_path, quiet=False)
+        
+        moco.load_state_dict(torch.load(moco_path, map_location=torch.device('cpu'), weights_only=True)['model_state_dict'])
+    
+    classifier_path = get_absolute_path('forapp/ckpoint/classifier_best_covid.pth')
     classifier.load_state_dict(torch.load(classifier_path, map_location=torch.device('cpu'), weights_only=True)['model_state_dict'])
     
     moco.eval()
